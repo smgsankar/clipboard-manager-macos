@@ -98,3 +98,43 @@ func defaultShortcutIsValid() {
     #expect(defaultShortcut.modifiers & UInt32(cmdKey) != 0)
     #expect(defaultShortcut.modifiers & UInt32(shiftKey) != 0)
 }
+
+@Test
+func shortcutEventModifiersIncludesOption() {
+    let shortcut = KeyboardShortcut(
+        keyCode: UInt32(kVK_ANSI_A),
+        modifiers: UInt32(optionKey)
+    )
+    
+    let flags = shortcut.eventModifiers
+    #expect(flags.contains(.option))
+    #expect(!flags.contains(.command))
+    #expect(!flags.contains(.shift))
+    #expect(!flags.contains(.control))
+}
+
+@Test
+func shortcutEventModifiersIncludesControl() {
+    let shortcut = KeyboardShortcut(
+        keyCode: UInt32(kVK_ANSI_A),
+        modifiers: UInt32(controlKey)
+    )
+    
+    let flags = shortcut.eventModifiers
+    #expect(flags.contains(.control))
+    #expect(!flags.contains(.command))
+    #expect(!flags.contains(.shift))
+    #expect(!flags.contains(.option))
+}
+
+@Test
+func shortcutDisplaysUnknownKeyCode() {
+    let shortcut = KeyboardShortcut(
+        keyCode: 999, // Unknown key code
+        modifiers: UInt32(cmdKey)
+    )
+    
+    let display = shortcut.displayString
+    #expect(display.contains("Key 999"))
+    #expect(display.contains("⌘"))
+}

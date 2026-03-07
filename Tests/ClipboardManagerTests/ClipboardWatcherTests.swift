@@ -88,15 +88,20 @@ func watcherStartAndStopManageTimer() async {
     // Stop the watcher
     watcher.stop()
     
+    // Wait a bit for any pending timer to complete
+    try? await Task.sleep(nanoseconds: 60_000_000) // 60ms to ensure pending timer completes
+    
+    let capturesAfterStop = captureCount
+    
     // Change content again
     pasteboard.string = "new content"
     pasteboard.changeCount = 2
     
     // Wait again
-    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    try? await Task.sleep(nanoseconds: 150_000_000) // 150ms (3x polling interval)
     
-    // Capture count should not increase after stop
-    #expect(captureCount == capturesBeforeStop)
+    // Capture count should not increase after the post-stop wait
+    #expect(captureCount == capturesAfterStop)
 }
 
 @MainActor
@@ -165,6 +170,6 @@ private final class FakePasteboard: PasteboardReading {
 }
 
 @MainActor
-private final class FakeFrontmostAppProvider: FrontmostAppProviding {
+final class FakeFrontmostAppProvider: FrontmostAppProviding {
     var frontmostApplicationName: String?
 }

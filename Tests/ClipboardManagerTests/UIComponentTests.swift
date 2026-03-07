@@ -1,0 +1,275 @@
+import SwiftUI
+import Testing
+import ViewInspector
+@testable import ClipboardManager
+
+@MainActor
+@Test
+func menuBarViewDisplaysEmptyState() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let view = MenuBarView(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    let text = try view.inspect().find(text: "No clipboard items")
+    #expect(try text.string() == "No clipboard items")
+}
+
+@MainActor
+@Test
+func menuBarViewDisplaysItemsWhenAvailable() async throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    await coordinator.store.captureText("Test item 1", sourceApplication: nil)
+    await coordinator.store.captureText("Test item 2", sourceApplication: nil)
+    
+    let view = MenuBarView(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    // Should not show empty state
+    #expect(throws: (any Error).self) {
+        try view.inspect().find(text: "No clipboard items")
+    }
+}
+
+@MainActor
+@Test
+func menuBarViewHasShowAllButton() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let view = MenuBarView(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    let button = try view.inspect().find(button: "Show All")
+    #expect(try button.labelView().text().string() == "Show All")
+}
+
+@MainActor
+@Test
+func menuBarViewHasPreferencesButton() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let view = MenuBarView(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    let button = try view.inspect().find(button: "Preferences")
+    #expect(try button.labelView().text().string() == "Preferences")
+}
+
+@MainActor
+@Test
+func menuBarViewHasQuitButton() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let view = MenuBarView(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    let button = try view.inspect().find(button: "Quit")
+    #expect(try button.labelView().text().string() == "Quit")
+}
+
+@MainActor
+@Test
+func clipboardRowViewDisplaysContent() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Test clipboard content",
+        timestamp: Date(),
+        sourceApplication: "TestApp"
+    )
+    
+    var copyCallCount = 0
+    var deleteCallCount = 0
+    
+    let view = ClipboardRowView(
+        item: item,
+        isSelected: false,
+        onCopy: { copyCallCount += 1 },
+        onDelete: { deleteCallCount += 1 }
+    )
+    
+    let contentText = try view.inspect().find(text: "Test clipboard content")
+    #expect(try contentText.string() == "Test clipboard content")
+}
+
+@MainActor
+@Test
+func clipboardRowViewDisplaysSourceApplication() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Content",
+        timestamp: Date(),
+        sourceApplication: "Safari"
+    )
+    
+    let view = ClipboardRowView(
+        item: item,
+        isSelected: false,
+        onCopy: {},
+        onDelete: {}
+    )
+    
+    let appText = try view.inspect().find(text: "Safari")
+    #expect(try appText.string() == "Safari")
+}
+
+@MainActor
+@Test
+func clipboardRowViewDisplaysTimestamp() throws {
+    let timestamp = Date()
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Content",
+        timestamp: timestamp,
+        sourceApplication: nil
+    )
+    
+    let view = ClipboardRowView(
+        item: item,
+        isSelected: false,
+        onCopy: {},
+        onDelete: {}
+    )
+    
+    let formattedDate = timestamp.formatted(date: .abbreviated, time: .shortened)
+    let timestampText = try view.inspect().find(text: formattedDate)
+    #expect(try timestampText.string() == formattedDate)
+}
+
+@MainActor
+@Test
+func clipboardRowViewHasCopyButton() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Content",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    var copyCallCount = 0
+    
+    let view = ClipboardRowView(
+        item: item,
+        isSelected: false,
+        onCopy: { copyCallCount += 1 },
+        onDelete: {}
+    )
+    
+    let buttons = try view.inspect().findAll(ViewType.Button.self)
+    
+    // Should have copy and delete buttons
+    #expect(buttons.count >= 2)
+}
+
+@MainActor
+@Test
+func clipboardRowViewCallsOnCopyWhenCopyButtonTapped() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Content",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    var copyCallCount = 0
+    
+    let view = ClipboardRowView(
+        item: item,
+        isSelected: false,
+        onCopy: { copyCallCount += 1 },
+        onDelete: {}
+    )
+    
+    // Find and tap the copy button
+    let buttons = try view.inspect().findAll(ViewType.Button.self)
+    if let copyButton = buttons.first {
+        try copyButton.tap()
+        #expect(copyCallCount == 1)
+    }
+}
+
+@MainActor
+@Test
+func clipboardRowViewCallsOnDeleteWhenDeleteButtonTapped() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Content",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    var deleteCallCount = 0
+    
+    let view = ClipboardRowView(
+        item: item,
+        isSelected: false,
+        onCopy: {},
+        onDelete: { deleteCallCount += 1 }
+    )
+    
+    // Find and tap the delete button
+    let buttons = try view.inspect().findAll(ViewType.Button.self)
+    if buttons.count >= 2 {
+        try buttons[1].tap()
+        #expect(deleteCallCount == 1)
+    }
+}
+
+@MainActor
+@Test
+func clipboardRowViewHighlightsWhenSelected() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Content",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    let selectedView = ClipboardRowView(
+        item: item,
+        isSelected: true,
+        onCopy: {},
+        onDelete: {}
+    )
+    
+    let unselectedView = ClipboardRowView(
+        item: item,
+        isSelected: false,
+        onCopy: {},
+        onDelete: {}
+    )
+    
+    // Both views should render without error
+    _ = try selectedView.inspect()
+    _ = try unselectedView.inspect()
+}

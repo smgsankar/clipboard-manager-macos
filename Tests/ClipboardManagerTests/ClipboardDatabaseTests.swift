@@ -222,3 +222,58 @@ func databasePruneReducesItemCount() async throws {
     #expect(afterPrune.first?.content == "item-19")
 }
 
+@Test
+func databaseFailsWithInvalidPath() async throws {
+    // Create a database at an invalid path (e.g., in a read-only location)
+    let invalidURL = URL(fileURLWithPath: "/dev/null/impossible.db")
+    let database = ClipboardDatabase(databaseURL: invalidURL)
+
+    // Expect error when trying to initialize
+    await #expect(throws: Error.self) {
+        _ = try await database.loadItems()
+    }
+}
+
+@Test
+func databaseErrorDescriptionsAreDescriptive() {
+    let openError = ClipboardDatabase.DatabaseError.openFailed("test message")
+    #expect(openError.errorDescription?.contains("Failed to open") == true)
+    #expect(openError.errorDescription?.contains("test message") == true)
+    
+    let prepareError = ClipboardDatabase.DatabaseError.prepareFailed("prepare test")
+    #expect(prepareError.errorDescription?.contains("Failed to prepare") == true)
+    
+    let bindError = ClipboardDatabase.DatabaseError.bindFailed("bind test")
+    #expect(bindError.errorDescription?.contains("Failed to bind") == true)
+    
+    let executionError = ClipboardDatabase.DatabaseError.executionFailed("exec test")
+    #expect(executionError.errorDescription?.contains("Failed to execute") == true)
+    
+    let notFoundError = ClipboardDatabase.DatabaseError.rowNotFound
+    #expect(notFoundError.errorDescription?.contains("not found") == true)
+}
+
+@Test
+func databaseHandlesCorruptedDatabaseFile() async throws {
+    let tempDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let databaseURL = tempDirectory.appendingPathComponent("clipboard.db")
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDirectory)
+    }
+    
+    // Create directory
+    try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+    
+    // Write invalid data to the database file
+    let corruptData = "This is not a valid SQLite database file".data(using: .utf8)!
+    try corruptData.write(to: databaseURL)
+    
+    let database = ClipboardDatabase(databaseURL: databaseURL)
+    
+    // Attempting to use the corrupted database should fail
+    await #expect(throws: Error.self) {
+        _ = try await database.loadItems()
+    }
+}

@@ -162,3 +162,85 @@ func storeReuseItemCapturesContentAgain() async {
     #expect(store.items.count == 2)
 }
 
+@MainActor
+@Test
+func storeHandlesCaptureErrorGracefully() async {
+    // Create a database with an invalid path to trigger errors
+    let invalidURL = URL(fileURLWithPath: "/dev/null/impossible.db")
+    let database = ClipboardDatabase(databaseURL: invalidURL)
+    let store = ClipboardStore(database: database, historyLimit: 100)
+
+    // Capture should fail but not crash
+    await store.captureText("test", sourceApplication: nil)
+    
+    // Error message should be set
+    #expect(store.lastErrorMessage != nil)
+    #expect(store.lastErrorMessage?.contains("Unable to save clipboard history") == true)
+}
+
+@MainActor
+@Test
+func storeHandlesDeleteErrorGracefully() async {
+    let invalidURL = URL(fileURLWithPath: "/dev/null/impossible.db")
+    let database = ClipboardDatabase(databaseURL: invalidURL)
+    let store = ClipboardStore(database: database, historyLimit: 100)
+
+    let dummyItem = ClipboardItem(
+        id: UUID(),
+        content: "test",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    // Delete should fail but not crash
+    await store.deleteItem(dummyItem)
+    
+    // Error message should be set
+    #expect(store.lastErrorMessage != nil)
+    #expect(store.lastErrorMessage?.contains("Unable to delete clipboard item") == true)
+}
+
+@MainActor
+@Test
+func storeHandlesClearHistoryErrorGracefully() async {
+    let invalidURL = URL(fileURLWithPath: "/dev/null/impossible.db")
+    let database = ClipboardDatabase(databaseURL: invalidURL)
+    let store = ClipboardStore(database: database, historyLimit: 100)
+
+    // Clear should fail but not crash
+    await store.clearHistory()
+    
+    // Error message should be set
+    #expect(store.lastErrorMessage != nil)
+    #expect(store.lastErrorMessage?.contains("Unable to clear clipboard history") == true)
+}
+
+@MainActor
+@Test
+func storeHandlesUpdateHistoryLimitErrorGracefully() async {
+    let invalidURL = URL(fileURLWithPath: "/dev/null/impossible.db")
+    let database = ClipboardDatabase(databaseURL: invalidURL)
+    let store = ClipboardStore(database: database, historyLimit: 100)
+
+    // Update should fail but not crash
+    await store.updateHistoryLimit(50)
+    
+    // Error message should be set
+    #expect(store.lastErrorMessage != nil)
+    #expect(store.lastErrorMessage?.contains("Unable to apply the new history limit") == true)
+}
+
+@MainActor
+@Test
+func storeHandlesLoadErrorGracefully() async {
+    let invalidURL = URL(fileURLWithPath: "/dev/null/impossible.db")
+    let database = ClipboardDatabase(databaseURL: invalidURL)
+    let store = ClipboardStore(database: database, historyLimit: 100)
+
+    // Load should fail but not crash
+    await store.load()
+    
+    // Error message should be set
+    #expect(store.lastErrorMessage != nil)
+    #expect(store.lastErrorMessage?.contains("Unable to load clipboard history") == true)
+}
