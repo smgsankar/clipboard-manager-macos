@@ -292,6 +292,33 @@ func appCoordinatorOpenPreferencesCanBeCalled() async {
 
 @MainActor
 @Test
+func appCoordinatorClosesPopupWhenOpeningPreferences() async {
+    let popupController = MockClipboardPopupPanelController()
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(
+        popupController: popupController,
+        database: database
+    )
+    
+    // Simulate popup being open
+    popupController.isShowing = true
+    
+    // Call openPreferences
+    coordinator.openPreferences()
+    
+    // Verify that close was called
+    #expect(popupController.closeCallCount == 1)
+    #expect(popupController.isShowing == false)
+}
+
+@MainActor
+@Test
 func appCoordinatorReEnablesHotkeyWhenPreferencesClose() async {
     let hotkeyManager = MockHotkeyManager()
     let preferences = AppPreferences(userDefaults: UserDefaults(suiteName: "test-\(UUID().uuidString)")!)

@@ -58,7 +58,7 @@ final class MockLaunchAtLoginController: LaunchAtLoginControlling {
 }
 
 @MainActor
-final class MockClipboardPopupPanelController {
+final class MockClipboardPopupPanelController: ClipboardPopupPanelControlling {
     var isShowing = false
     var showCallCount = 0
     var closeCallCount = 0
@@ -72,7 +72,7 @@ final class MockClipboardPopupPanelController {
         lastCoordinator = coordinator
     }
     
-    func close() {
+    func close(shouldHideApp: Bool) {
         closeCallCount += 1
         isShowing = false
     }
@@ -188,7 +188,7 @@ func popupPanelControllerMockClosesPanel() {
     let controller = MockClipboardPopupPanelController()
     controller.isShowing = true
     
-    controller.close()
+    controller.close(shouldHideApp: true)
     
     #expect(controller.closeCallCount == 1)
     #expect(!controller.isShowing)

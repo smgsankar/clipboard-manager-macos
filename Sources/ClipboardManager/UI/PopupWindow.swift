@@ -2,7 +2,13 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class ClipboardPopupPanelController {
+protocol ClipboardPopupPanelControlling {
+    func show(store: ClipboardStore, coordinator: AppCoordinator)
+    func close(shouldHideApp: Bool)
+}
+
+@MainActor
+final class ClipboardPopupPanelController: ClipboardPopupPanelControlling {
     private var panel: NSPanel?
     private var panelDelegate: PanelDelegate?
 

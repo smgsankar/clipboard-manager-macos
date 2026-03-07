@@ -12,7 +12,7 @@ final class AppCoordinator: ObservableObject {
 
     private let pasteboardReader: PasteboardReading
     private let frontmostAppProvider: FrontmostAppProviding
-    private let popupController: ClipboardPopupPanelController
+    private let popupController: ClipboardPopupPanelControlling
     private let preferencesController: PreferencesWindowController
     private let hotkeyManager: HotkeyManaging
     private let launchAtLoginManager: LaunchAtLoginControlling
@@ -25,7 +25,7 @@ final class AppCoordinator: ObservableObject {
         preferences: AppPreferences = AppPreferences(),
         pasteboardReader: PasteboardReading = PasteboardReader(),
         frontmostAppProvider: FrontmostAppProviding = FrontmostAppProvider(),
-        popupController: ClipboardPopupPanelController = ClipboardPopupPanelController(),
+        popupController: ClipboardPopupPanelControlling = ClipboardPopupPanelController(),
         hotkeyManager: HotkeyManaging = HotkeyManager(),
         launchAtLoginManager: LaunchAtLoginControlling = LaunchAtLoginManager(),
         database: ClipboardDatabase = ClipboardDatabase()
@@ -80,7 +80,7 @@ final class AppCoordinator: ObservableObject {
     }
 
     func closePopup() {
-        popupController.close()
+        popupController.close(shouldHideApp: true)
     }
     
     func closePopupWithoutHiding() {
@@ -88,6 +88,9 @@ final class AppCoordinator: ObservableObject {
     }
 
     func openPreferences() {
+        // Close the clipboard history popup if it's open, but don't hide the app
+        closePopupWithoutHiding()
+        
         // Ensure NSApplication is available
         guard NSApplication.shared as NSApplication? != nil else {
             AppLogger.warning("NSApplication not available - cannot open preferences")
