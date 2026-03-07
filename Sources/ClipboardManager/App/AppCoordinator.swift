@@ -82,6 +82,10 @@ final class AppCoordinator: ObservableObject {
     func closePopup() {
         popupController.close()
     }
+    
+    func closePopupWithoutHiding() {
+        popupController.close(shouldHideApp: false)
+    }
 
     func openPreferences() {
         // Ensure NSApplication is available
@@ -124,6 +128,14 @@ final class AppCoordinator: ObservableObject {
         watcher.stop()
         hotkeyManager.unregister()
         NSApplication.shared.terminate(nil)
+    }
+
+    func temporarilyDisableHotkey() {
+        hotkeyManager.unregister()
+    }
+
+    func reEnableHotkey() {
+        applyHotkey(preferences.shortcut)
     }
 
     private func configureBindings() {

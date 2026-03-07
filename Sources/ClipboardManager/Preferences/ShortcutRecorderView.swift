@@ -3,12 +3,16 @@ import SwiftUI
 
 struct ShortcutRecorderView: NSViewRepresentable {
     @Binding var shortcut: KeyboardShortcut
+    var onRecordingStarted: (() -> Void)?
+    var onRecordingEnded: (() -> Void)?
 
     func makeNSView(context: Context) -> ShortcutCaptureField {
         let field = ShortcutCaptureField()
         field.onShortcutCapture = { capturedShortcut in
             shortcut = capturedShortcut
         }
+        field.onRecordingStarted = onRecordingStarted
+        field.onRecordingEnded = onRecordingEnded
         field.currentShortcut = shortcut
         return field
     }
@@ -17,12 +21,18 @@ struct ShortcutRecorderView: NSViewRepresentable {
         nsView.onShortcutCapture = { capturedShortcut in
             shortcut = capturedShortcut
         }
+        nsView.onRecordingStarted = onRecordingStarted
+        nsView.onRecordingEnded = onRecordingEnded
         nsView.currentShortcut = shortcut
     }
 }
 
 final class ShortcutCaptureField: NSTextField {
     var onShortcutCapture: ((KeyboardShortcut) -> Void)?
+    var onRecordingStarted: (() -> Void)?
+    var onRecordingEnded: (() -> Void)?
+
+    private var isRecording = false
 
     var currentShortcut: KeyboardShortcut = .defaultShortcut {
         didSet {
@@ -61,7 +71,9 @@ final class ShortcutCaptureField: NSTextField {
     override func becomeFirstResponder() -> Bool {
         let didBecomeFirstResponder = super.becomeFirstResponder()
         if didBecomeFirstResponder {
+            isRecording = true
             stringValue = "Type Shortcut…"
+            onRecordingStarted?()
         }
         return didBecomeFirstResponder
     }
@@ -69,9 +81,21 @@ final class ShortcutCaptureField: NSTextField {
     override func resignFirstResponder() -> Bool {
         let didResignFirstResponder = super.resignFirstResponder()
         if didResignFirstResponder {
+            isRecording = false
             stringValue = currentShortcut.displayString
+            onRecordingEnded?()
         }
         return didResignFirstResponder
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        super.viewWillMove(toWindow: newWindow)
+        
+        // If we're being removed from window while recording, clean up
+        if newWindow == nil && isRecording {
+            isRecording = false
+            onRecordingEnded?()
+        }
     }
 
     override func keyDown(with event: NSEvent) {

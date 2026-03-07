@@ -5,8 +5,11 @@ import SwiftUI
 final class PreferencesWindowController {
     private var window: NSWindow?
     private var windowDelegate: WindowDelegate?
+    private weak var currentCoordinator: AppCoordinator?
     
     func show(coordinator: AppCoordinator) {
+        self.currentCoordinator = coordinator
+        
         // If window already exists, just bring it to front
         if let window = window {
             window.center()
@@ -33,10 +36,23 @@ final class PreferencesWindowController {
         newWindow.isReleasedWhenClosed = false
         
         // Set window delegate to handle closing
-        let delegate = WindowDelegate { [weak self] in
-            self?.window = nil
-            self?.windowDelegate = nil
-        }
+        let delegate = WindowDelegate(
+            window: newWindow,
+            onClose: { [weak self] in
+                // Ensure hotkey is re-enabled when window closes
+                self?.currentCoordinator?.reEnableHotkey()
+                
+                self?.window = nil
+                self?.windowDelegate = nil
+                self?.currentCoordinator = nil
+                // Reset activation policy when preferences closes
+                _ = NSApp.setActivationPolicy(.accessory)
+            },
+            onResignKey: { [weak self] in
+                // Re-enable hotkey when window loses focus
+                self?.currentCoordinator?.reEnableHotkey()
+            }
+        )
         newWindow.delegate = delegate
         
         self.window = newWindow
@@ -48,21 +64,35 @@ final class PreferencesWindowController {
     }
     
     func close() {
+        // Ensure hotkey is re-enabled when closing programmatically
+        currentCoordinator?.reEnableHotkey()
+        
         window?.close()
         window = nil
         windowDelegate = nil
+        currentCoordinator = nil
     }
 }
 
 private class WindowDelegate: NSObject, NSWindowDelegate {
+    weak var window: NSWindow?
     let onClose: () -> Void
+    let onResignKey: () -> Void
     
-    init(onClose: @escaping () -> Void) {
+    init(window: NSWindow, onClose: @escaping () -> Void, onResignKey: @escaping () -> Void) {
+        self.window = window
         self.onClose = onClose
+        self.onResignKey = onResignKey
         super.init()
     }
     
     func windowWillClose(_ notification: Notification) {
         onClose()
+    }
+    
+    func windowDidResignKey(_ notification: Notification) {
+        // Force the first responder to resign (stops recording UI)
+        window?.makeFirstResponder(nil)
+        onResignKey()
     }
 }

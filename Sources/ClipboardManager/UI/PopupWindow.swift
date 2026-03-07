@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class ClipboardPopupPanelController {
     private var panel: NSPanel?
+    private var panelDelegate: PanelDelegate?
 
     func show(store: ClipboardStore, coordinator: AppCoordinator) {
         let hostingController = NSHostingController(
@@ -25,6 +26,13 @@ final class ClipboardPopupPanelController {
             panel.level = .floating
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.contentViewController = hostingController
+            
+            // Set up delegate to handle window closing
+            let delegate = PanelDelegate { [weak self] in
+                self?.handlePanelClosing()
+            }
+            panel.delegate = delegate
+            self.panelDelegate = delegate
             self.panel = panel
         }
 
@@ -33,8 +41,18 @@ final class ClipboardPopupPanelController {
         panel?.makeKeyAndOrderFront(nil)
     }
 
-    func close() {
+    func close(shouldHideApp: Bool = true) {
         panel?.orderOut(nil)
+        if shouldHideApp {
+            handlePanelClosing()
+        }
+    }
+    
+    private func handlePanelClosing() {
+        // Hide the app to return focus to the previously active application
+        if NSApplication.shared as NSApplication? != nil {
+            NSApp.hide(nil)
+        }
     }
 }
 
@@ -90,7 +108,7 @@ struct PopupWindow: View {
                 Spacer()
 
                 Button("Preferences") {
-                    coordinator.closePopup()
+                    coordinator.closePopupWithoutHiding()
                     coordinator.openPreferences()
                 }
 
@@ -205,5 +223,18 @@ private struct PopupKeyMonitor: NSViewRepresentable {
             }
             monitor = nil
         }
+    }
+}
+
+private class PanelDelegate: NSObject, NSWindowDelegate {
+    let onClose: () -> Void
+    
+    init(onClose: @escaping () -> Void) {
+        self.onClose = onClose
+        super.init()
+    }
+    
+    func windowWillClose(_ notification: Notification) {
+        onClose()
     }
 }

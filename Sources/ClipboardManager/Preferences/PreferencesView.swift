@@ -15,8 +15,16 @@ struct PreferencesView: View {
                 HStack {
                     Text("Open Clipboard History")
                     Spacer()
-                    ShortcutRecorderView(shortcut: $preferences.shortcut)
-                        .frame(width: 180, height: 28)
+                    ShortcutRecorderView(
+                        shortcut: $preferences.shortcut,
+                        onRecordingStarted: {
+                            coordinator.temporarilyDisableHotkey()
+                        },
+                        onRecordingEnded: {
+                            coordinator.reEnableHotkey()
+                        }
+                    )
+                    .frame(width: 180, height: 28)
                 }
 
                 Text("Default: \(KeyboardShortcut.defaultShortcut.displayString)")

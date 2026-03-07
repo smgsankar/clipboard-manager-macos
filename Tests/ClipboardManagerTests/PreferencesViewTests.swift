@@ -147,3 +147,105 @@ func preferencesViewUpdatesHistoryLimit() throws {
     let steppers = try view.inspect().findAll(ViewType.Stepper.self)
     #expect(steppers.count >= 1)
 }
+
+// MARK: - ShortcutRecorderView Cleanup Tests
+
+@MainActor
+@Test
+func shortcutCaptureFieldCallsOnRecordingEndedWhenRemovedFromWindow() {
+    let field = ShortcutCaptureField()
+    var recordingStartedCalled = false
+    var recordingEndedCalled = false
+    
+    field.onRecordingStarted = {
+        recordingStartedCalled = true
+    }
+    
+    field.onRecordingEnded = {
+        recordingEndedCalled = true
+    }
+    
+    // Create a window and add the field
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),
+        styleMask: [.titled],
+        backing: .buffered,
+        defer: false
+    )
+    let containerView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
+    window.contentView = containerView
+    containerView.addSubview(field)
+    
+    // Simulate becoming first responder (start recording)
+    window.makeFirstResponder(field)
+    
+    #expect(recordingStartedCalled)
+    
+    // Remove from window (simulate window closing while recording)
+    field.removeFromSuperview()
+    
+    // Should have called onRecordingEnded as cleanup
+    #expect(recordingEndedCalled)
+}
+
+@MainActor
+@Test
+func shortcutCaptureFieldCallsOnRecordingEndedOnResignFirstResponder() {
+    let field = ShortcutCaptureField()
+    var recordingEndedCallCount = 0
+    
+    field.onRecordingEnded = {
+        recordingEndedCallCount += 1
+    }
+    
+    // Create a window and add the field
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),
+        styleMask: [.titled],
+        backing: .buffered,
+        defer: false
+    )
+    let containerView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
+    window.contentView = containerView
+    containerView.addSubview(field)
+    
+    // Start recording
+    window.makeFirstResponder(field)
+    
+    #expect(recordingEndedCallCount == 0)
+    
+    // Stop recording by losing focus
+    window.makeFirstResponder(nil)
+    
+    // Should have called onRecordingEnded
+    #expect(recordingEndedCallCount == 1)
+}
+
+@MainActor
+@Test
+func shortcutCaptureFieldTracksRecordingState() {
+    let field = ShortcutCaptureField()
+    
+    // Create a window and add the field
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),
+        styleMask: [.titled],
+        backing: .buffered,
+        defer: false
+    )
+    let containerView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
+    window.contentView = containerView
+    containerView.addSubview(field)
+    field.frame = NSRect(x: 0, y: 0, width: 180, height: 28)
+    
+    // Initial state - not recording
+    #expect(window.firstResponder !== field)
+    
+    // Start recording
+    window.makeFirstResponder(field)
+    #expect(window.firstResponder === field)
+    
+    // Stop recording
+    window.makeFirstResponder(nil)
+    #expect(window.firstResponder !== field)
+}

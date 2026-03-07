@@ -292,6 +292,41 @@ func appCoordinatorOpenPreferencesCanBeCalled() async {
 
 @MainActor
 @Test
+func appCoordinatorReEnablesHotkeyWhenPreferencesClose() async {
+    let hotkeyManager = MockHotkeyManager()
+    let preferences = AppPreferences(userDefaults: UserDefaults(suiteName: "test-\(UUID().uuidString)")!)
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(
+        preferences: preferences,
+        hotkeyManager: hotkeyManager,
+        database: database
+    )
+    
+    // Wait for initialization
+    try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+    
+    let initialRegisterCount = hotkeyManager.registerCallCount
+    
+    // Simulate opening preferences (which would call temporarilyDisableHotkey)
+    coordinator.temporarilyDisableHotkey()
+    #expect(hotkeyManager.registeredShortcut == nil)
+    
+    // Simulate the preferences window closing by calling reEnableHotkey
+    coordinator.reEnableHotkey()
+    
+    // Verify hotkey was re-registered
+    #expect(hotkeyManager.registerCallCount == initialRegisterCount + 1)
+    #expect(hotkeyManager.registeredShortcut == preferences.shortcut)
+}
+
+@MainActor
+@Test
 func appCoordinatorSettingsWindowObserverDoesNotCrash() async {
     let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
@@ -347,6 +382,93 @@ func appCoordinatorClosePopupCanBeCalled() async {
     
     // Call closePopup - verify it doesn't crash
     coordinator.closePopup()
+    
+    // Allow time for any async operations
+    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    
+    // If we get here without crashing, the test passes
+    #expect(true)
+}
+
+@MainActor
+@Test
+func appCoordinatorTemporarilyDisablesHotkey() async {
+    let hotkeyManager = MockHotkeyManager()
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(
+        hotkeyManager: hotkeyManager,
+        database: database
+    )
+    
+    // Wait for initialization
+    try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+    
+    let initialUnregisterCount = hotkeyManager.unregisterCallCount
+    
+    // Temporarily disable hotkey
+    coordinator.temporarilyDisableHotkey()
+    
+    // Verify unregister was called
+    #expect(hotkeyManager.unregisterCallCount == initialUnregisterCount + 1)
+    #expect(hotkeyManager.registeredShortcut == nil)
+}
+
+@MainActor
+@Test
+func appCoordinatorReEnablesHotkey() async {
+    let hotkeyManager = MockHotkeyManager()
+    let preferences = AppPreferences(userDefaults: UserDefaults(suiteName: "test-\(UUID().uuidString)")!)
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(
+        preferences: preferences,
+        hotkeyManager: hotkeyManager,
+        database: database
+    )
+    
+    // Wait for initialization
+    try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+    
+    let initialRegisterCount = hotkeyManager.registerCallCount
+    
+    // Temporarily disable then re-enable
+    coordinator.temporarilyDisableHotkey()
+    coordinator.reEnableHotkey()
+    
+    // Verify register was called again
+    #expect(hotkeyManager.registerCallCount == initialRegisterCount + 1)
+    #expect(hotkeyManager.registeredShortcut == preferences.shortcut)
+}
+
+@MainActor
+@Test
+func appCoordinatorClosePopupWithoutHidingCanBeCalled() async {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(database: database)
+    
+    // Note: This is a smoke test that verifies the closePopupWithoutHiding() method can be called
+    // without crashing. The actual behavior of closing the popup without hiding the app requires a
+    // full macOS app environment and should be tested manually or with UI tests.
+    
+    // Call closePopupWithoutHiding - verify it doesn't crash
+    coordinator.closePopupWithoutHiding()
     
     // Allow time for any async operations
     try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
