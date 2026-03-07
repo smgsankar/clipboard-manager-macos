@@ -143,9 +143,9 @@ func preferencesViewUpdatesHistoryLimit() throws {
     
     let view = PreferencesView(coordinator: coordinator)
     
-    // Find the stepper
-    let steppers = try view.inspect().findAll(ViewType.Stepper.self)
-    #expect(steppers.count >= 1)
+    // Find the picker
+    let pickers = try view.inspect().findAll(ViewType.Picker.self)
+    #expect(pickers.count >= 1)
 }
 
 // MARK: - ShortcutRecorderView Cleanup Tests

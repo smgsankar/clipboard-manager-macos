@@ -39,13 +39,16 @@ struct PreferencesView: View {
             }
 
             Section("History") {
-                Stepper(
-                    value: $preferences.historyLimit,
-                    in: AppPreferences.historyLimitRange,
-                    step: 10
-                ) {
-                    Text("History Size: \(preferences.historyLimit)")
+                Picker("History Size", selection: $preferences.historyLimit) {
+                    Text("10").tag(10)
+                    Text("25").tag(25)
+                    Text("50").tag(50)
+                    Text("100").tag(100)
+                    Text("200").tag(200)
+                    Text("500").tag(500)
+                    Text("1000").tag(1000)
                 }
+                .pickerStyle(.menu)
 
                 Text("Stored locally only. Maximum 1000 text entries.")
                     .font(.caption)
