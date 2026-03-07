@@ -221,6 +221,7 @@ The app uses a coordinator pattern (`AppCoordinator`) to manage application flow
 - See [TECH_SPEC.md](docs/TECH_SPEC.md) for technical specifications
 - See [COVERAGE.md](docs/COVERAGE.md) for coverage guidelines
 - Run `./scripts/coverage.sh` to check test coverage
+- Run `./scripts/lint.sh` to manually run SwiftLint (also runs automatically during builds)
 
 ---
 
