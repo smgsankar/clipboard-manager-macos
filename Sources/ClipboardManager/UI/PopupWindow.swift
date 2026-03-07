@@ -90,6 +90,7 @@ struct PopupWindow: View {
                 Spacer()
 
                 Button("Preferences") {
+                    coordinator.closePopup()
                     coordinator.openPreferences()
                 }
 

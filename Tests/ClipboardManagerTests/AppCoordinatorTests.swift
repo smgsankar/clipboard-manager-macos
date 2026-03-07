@@ -328,3 +328,29 @@ func appCoordinatorSettingsWindowObserverDoesNotCrash() async {
     // If we get here without crashing, the test passes
     #expect(true)
 }
+
+@MainActor
+@Test
+func appCoordinatorClosePopupCanBeCalled() async {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(database: database)
+    
+    // Note: This is a smoke test that verifies the closePopup() method can be called
+    // without crashing. The actual behavior of closing the popup window requires a
+    // full macOS app environment and should be tested manually or with UI tests.
+    
+    // Call closePopup - verify it doesn't crash
+    coordinator.closePopup()
+    
+    // Allow time for any async operations
+    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    
+    // If we get here without crashing, the test passes
+    #expect(true)
+}

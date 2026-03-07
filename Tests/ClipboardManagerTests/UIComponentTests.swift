@@ -273,3 +273,79 @@ func clipboardRowViewHighlightsWhenSelected() throws {
     _ = try selectedView.inspect()
     _ = try unselectedView.inspect()
 }
+
+// MARK: - PopupWindow Tests
+
+@MainActor
+@Test
+func popupWindowHasPreferencesButton() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let view = PopupWindow(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    let button = try view.inspect().find(button: "Preferences")
+    #expect(try button.labelView().text().string() == "Preferences")
+}
+
+@MainActor
+@Test
+func popupWindowHasClearHistoryButton() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let view = PopupWindow(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    let button = try view.inspect().find(button: "Clear History")
+    #expect(try button.labelView().text().string() == "Clear History")
+}
+
+@MainActor
+@Test
+func popupWindowHasSearchField() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let view = PopupWindow(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    // Verify the search field exists
+    let textField = try view.inspect().find(ViewType.TextField.self)
+    #expect(textField != nil)
+}
+
+@MainActor
+@Test
+func popupWindowDisplaysItemCount() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    let coordinator = AppCoordinator(database: database)
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let view = PopupWindow(coordinator: coordinator)
+        .environmentObject(coordinator.store)
+    
+    // Should show "0 items" when empty
+    let itemsText = try view.inspect().find(text: "0 items")
+    #expect(try itemsText.string() == "0 items")
+}
