@@ -13,6 +13,9 @@ let package = Package(
             targets: ["ClipboardManager"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-testing.git", from: "0.12.0")
+    ],
     targets: [
         .executableTarget(
             name: "ClipboardManager",
@@ -25,7 +28,10 @@ let package = Package(
         ),
         .testTarget(
             name: "ClipboardManagerTests",
-            dependencies: ["ClipboardManager"]
+            dependencies: [
+                "ClipboardManager",
+                .product(name: "Testing", package: "swift-testing")
+            ]
         )
     ]
 )

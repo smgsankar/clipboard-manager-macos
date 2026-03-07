@@ -53,6 +53,103 @@ func watcherIgnoresEmptyAndOversizedText() {
 }
 
 @MainActor
+@Test
+func watcherStartAndStopManageTimer() async {
+    let pasteboard = FakePasteboard()
+    let appProvider = FakeFrontmostAppProvider()
+
+    var captureCount = 0
+    let watcher = ClipboardWatcher(
+        pasteboard: pasteboard,
+        frontmostAppProvider: appProvider,
+        pollingInterval: 0.05 // 50ms for faster tests
+    ) { _, _ in
+        captureCount += 1
+    }
+
+    // Start the watcher
+    watcher.start()
+    
+    // Verify it doesn't restart if already started
+    watcher.start()
+    
+    // Change pasteboard content
+    pasteboard.string = "test content"
+    pasteboard.changeCount = 1
+    
+    // Wait for polling to happen
+    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    
+    // Should have captured the content
+    #expect(captureCount > 0)
+    
+    let capturesBeforeStop = captureCount
+    
+    // Stop the watcher
+    watcher.stop()
+    
+    // Change content again
+    pasteboard.string = "new content"
+    pasteboard.changeCount = 2
+    
+    // Wait again
+    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    
+    // Capture count should not increase after stop
+    #expect(captureCount == capturesBeforeStop)
+}
+
+@MainActor
+@Test
+func watcherIgnoresUnchangedPasteboard() {
+    let pasteboard = FakePasteboard()
+    let appProvider = FakeFrontmostAppProvider()
+
+    var captureCount = 0
+    let watcher = ClipboardWatcher(
+        pasteboard: pasteboard,
+        frontmostAppProvider: appProvider,
+        pollingInterval: 0.3
+    ) { _, _ in
+        captureCount += 1
+    }
+
+    pasteboard.string = "test"
+    pasteboard.changeCount = 1
+    watcher.pollNow()
+    
+    #expect(captureCount == 1)
+    
+    // Poll again without changing pasteboard
+    watcher.pollNow()
+    
+    // Should not capture again
+    #expect(captureCount == 1)
+}
+
+@MainActor
+@Test
+func watcherIgnoresNilPasteboardContent() {
+    let pasteboard = FakePasteboard()
+    let appProvider = FakeFrontmostAppProvider()
+
+    var captureCount = 0
+    let watcher = ClipboardWatcher(
+        pasteboard: pasteboard,
+        frontmostAppProvider: appProvider,
+        pollingInterval: 0.3
+    ) { _, _ in
+        captureCount += 1
+    }
+
+    pasteboard.string = nil
+    pasteboard.changeCount = 1
+    watcher.pollNow()
+    
+    #expect(captureCount == 0)
+}
+
+@MainActor
 private final class FakePasteboard: PasteboardReading {
     var changeCount: Int = 0
     var string: String?
