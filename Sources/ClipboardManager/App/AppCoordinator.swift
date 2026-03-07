@@ -13,6 +13,7 @@ final class AppCoordinator: ObservableObject {
     private let pasteboardReader: PasteboardReading
     private let frontmostAppProvider: FrontmostAppProviding
     private let popupController: ClipboardPopupPanelController
+    private let preferencesController: PreferencesWindowController
     private let hotkeyManager: HotkeyManaging
     private let launchAtLoginManager: LaunchAtLoginControlling
     private let watcher: ClipboardWatcher
@@ -33,6 +34,7 @@ final class AppCoordinator: ObservableObject {
         self.pasteboardReader = pasteboardReader
         self.frontmostAppProvider = frontmostAppProvider
         self.popupController = popupController
+        self.preferencesController = PreferencesWindowController()
         self.hotkeyManager = hotkeyManager
         self.launchAtLoginManager = launchAtLoginManager
         store = ClipboardStore(
@@ -53,6 +55,7 @@ final class AppCoordinator: ObservableObject {
         }
 
         configureBindings()
+        setupSettingsWindowObserver()
 
         Task { @MainActor in
             await startIfNeeded()
@@ -81,8 +84,17 @@ final class AppCoordinator: ObservableObject {
     }
 
     func openPreferences() {
-        NSApplication.shared.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        NSApp.activate(ignoringOtherApps: true)
+        // Ensure NSApplication is available
+        guard NSApplication.shared as NSApplication? != nil else {
+            AppLogger.warning("NSApplication not available - cannot open preferences")
+            return
+        }
+        
+        // Temporarily change activation policy to allow preferences window
+        _ = NSApp.setActivationPolicy(.regular)
+        
+        // Show the preferences window
+        preferencesController.show(coordinator: self)
     }
 
     func copyItem(_ item: ClipboardItem) {
@@ -161,5 +173,29 @@ final class AppCoordinator: ObservableObject {
     private func applyLaunchAtLogin(_ isEnabled: Bool) {
         launchAtLoginManager.setEnabled(isEnabled)
         launchAtLoginErrorMessage = launchAtLoginManager.lastErrorMessage
+    }
+    
+    private func setupSettingsWindowObserver() {
+        // Monitor for settings windows closing to reset activation policy
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let window = notification.object as? NSWindow else { return }
+            
+            // Check if this is the settings window
+            Task { @MainActor in
+                guard let app = NSApplication.shared as NSApplication? else { return }
+                
+                if window.identifier?.rawValue.contains("Settings") == true ||
+                   window.title == "Settings" ||
+                   window.title == "Preferences" {
+                    // Reset to accessory when settings window closes
+                    _ = app.setActivationPolicy(.accessory)
+                    self?.objectWillChange.send()
+                }
+            }
+        }
     }
 }

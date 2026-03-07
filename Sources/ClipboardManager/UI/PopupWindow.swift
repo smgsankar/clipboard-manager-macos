@@ -69,7 +69,7 @@ struct PopupWindow: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(.horizontal, 16)
 
             Divider()
 
@@ -89,12 +89,16 @@ struct PopupWindow: View {
 
                 Spacer()
 
+                Button("Preferences") {
+                    coordinator.openPreferences()
+                }
+
                 Button("Clear History", role: .destructive) {
                     isShowingClearConfirmation = true
                 }
                 .disabled(store.items.isEmpty)
             }
-            .padding(16)
+            .padding(.horizontal, 16)
         }
         .frame(minWidth: 640, idealWidth: 720, minHeight: 420, idealHeight: 520)
         .background(

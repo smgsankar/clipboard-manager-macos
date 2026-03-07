@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 @testable import ClipboardManager
@@ -260,4 +261,70 @@ func appCoordinatorUnregistersHotkeyOnQuit() async {
     // Note: quit() calls NSApplication.shared.terminate which we can't test
     // But we can verify the unregister is called
     #expect(hotkeyManager.unregisterCallCount == 0)
+}
+
+@MainActor
+@Test
+func appCoordinatorOpenPreferencesCanBeCalled() async {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(database: database)
+    
+    // Note: This is a smoke test that verifies the openPreferences() method can be called
+    // without crashing. The actual behavior of showing the preferences window and changing
+    // activation policy requires a full macOS app environment and should be tested manually
+    // or with UI tests.
+    
+    // Call openPreferences - verify it doesn't crash
+    coordinator.openPreferences()
+    
+    // Allow time for any async operations
+    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    
+    // If we get here without crashing, the test passes
+    #expect(true)
+}
+
+@MainActor
+@Test
+func appCoordinatorSettingsWindowObserverDoesNotCrash() async {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(database: database)
+    
+    // Note: This tests that the notification observer setup doesn't crash.
+    // The actual behavior of detecting settings window closing and resetting
+    // activation policy requires a full macOS app environment.
+    
+    // Simulate a window closing by posting a notification
+    let testWindow = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+        styleMask: [.titled, .closable],
+        backing: .buffered,
+        defer: false
+    )
+    testWindow.title = "Settings"
+    testWindow.identifier = NSUserInterfaceItemIdentifier("TestSettingsWindow")
+    
+    // Post the will close notification
+    NotificationCenter.default.post(
+        name: NSWindow.willCloseNotification,
+        object: testWindow
+    )
+    
+    // Allow time for the notification to be processed
+    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    
+    // If we get here without crashing, the test passes
+    #expect(true)
 }
