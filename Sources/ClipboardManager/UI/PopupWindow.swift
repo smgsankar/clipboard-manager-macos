@@ -22,7 +22,7 @@ final class ClipboardPopupPanelController: ClipboardPopupPanelControlling {
             panel.contentViewController = hostingController
         } else {
             let panel = ClipboardPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
+                contentRect: NSRect(x: 0, y: 0, width: 720, height: 480),
                 styleMask: [.titled, .closable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
@@ -42,9 +42,14 @@ final class ClipboardPopupPanelController: ClipboardPopupPanelControlling {
             self.panel = panel
         }
 
-        panel?.center()
-        NSApp.activate(ignoringOtherApps: true)
+        // Show the panel first
         panel?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        
+        // Center after SwiftUI has laid out  the content
+        DispatchQueue.main.async { [weak self] in
+            self?.panel?.center()
+        }
     }
 
     func close(shouldHideApp: Bool = true) {

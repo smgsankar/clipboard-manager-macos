@@ -18,9 +18,13 @@ final class PreferencesWindowController: PreferencesWindowControlling {
         
         // If window already exists, just bring it to front
         if let window = window {
-            window.center()
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            
+            // Center after showing
+            DispatchQueue.main.async {
+                window.center()
+            }
             return
         }
         
@@ -31,14 +35,13 @@ final class PreferencesWindowController: PreferencesWindowControlling {
         
         // Create the window
         let newWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 520),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
         newWindow.title = "Preferences"
         newWindow.contentViewController = hostingController
-        newWindow.center()
         newWindow.isReleasedWhenClosed = false
         
         // Set window delegate to handle closing
@@ -64,9 +67,14 @@ final class PreferencesWindowController: PreferencesWindowControlling {
         self.window = newWindow
         self.windowDelegate = delegate
         
-        // Show the window
+        // Show the window first
         newWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        
+        // Center after SwiftUI has laid out the content
+        DispatchQueue.main.async {
+            newWindow.center()
+        }
     }
     
     func close() {
