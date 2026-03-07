@@ -2,7 +2,13 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class PreferencesWindowController {
+protocol PreferencesWindowControlling {
+    func show(coordinator: AppCoordinator)
+    func close()
+}
+
+@MainActor
+final class PreferencesWindowController: PreferencesWindowControlling {
     private var window: NSWindow?
     private var windowDelegate: WindowDelegate?
     private weak var currentCoordinator: AppCoordinator?

@@ -68,8 +68,8 @@ func appCoordinatorStartsWatcherAndRegistersHotkey() async {
         database: database
     )
     
-    // Wait for initialization to complete
-    try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+    // Explicitly await initialization (guard in startIfNeeded ensures it runs once)
+    await coordinator.startIfNeeded()
     
     #expect(hotkeyManager.registerCallCount == 1)
     #expect(hotkeyManager.registeredShortcut != nil)
@@ -181,7 +181,8 @@ func appCoordinatorHandlesHotkeyError() async {
         database: database
     )
     
-    try? await Task.sleep(nanoseconds: 50_000_000)
+    // Explicitly await initialization (guard in startIfNeeded ensures it runs once)
+    await coordinator.startIfNeeded()
     
     #expect(coordinator.hotkeyErrorMessage != nil)
 }
@@ -266,6 +267,7 @@ func appCoordinatorUnregistersHotkeyOnQuit() async {
 @MainActor
 @Test
 func appCoordinatorOpenPreferencesCanBeCalled() async {
+    let preferencesController = MockPreferencesWindowController()
     let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
     
@@ -273,27 +275,26 @@ func appCoordinatorOpenPreferencesCanBeCalled() async {
         try? FileManager.default.removeItem(at: tempDir)
     }
     
-    let coordinator = AppCoordinator(database: database)
+    let coordinator = AppCoordinator(
+        preferencesController: preferencesController,
+        database: database
+    )
     
-    // Note: This is a smoke test that verifies the openPreferences() method can be called
-    // without crashing. The actual behavior of showing the preferences window and changing
-    // activation policy requires a full macOS app environment and should be tested manually
-    // or with UI tests.
-    
-    // Call openPreferences - verify it doesn't crash
+    // Call openPreferences - verify it calls the preferences controller
     coordinator.openPreferences()
     
     // Allow time for any async operations
     try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
     
-    // If we get here without crashing, the test passes
-    #expect(true)
+    #expect(preferencesController.showCallCount == 1)
+    #expect(preferencesController.isShowing == true)
 }
 
 @MainActor
 @Test
 func appCoordinatorClosesPopupWhenOpeningPreferences() async {
     let popupController = MockClipboardPopupPanelController()
+    let preferencesController = MockPreferencesWindowController()
     let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
     
@@ -303,6 +304,7 @@ func appCoordinatorClosesPopupWhenOpeningPreferences() async {
     
     let coordinator = AppCoordinator(
         popupController: popupController,
+        preferencesController: preferencesController,
         database: database
     )
     

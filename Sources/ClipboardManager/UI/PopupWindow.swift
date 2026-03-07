@@ -100,7 +100,10 @@ struct PopupWindow: View {
             ClipboardListView(
                 items: filteredItems,
                 selectedItemID: $selectedItemID,
-                onCopy: coordinator.copyItem,
+                onCopy: { item in
+                    coordinator.copyItem(item)
+                    coordinator.closePopup()
+                },
                 onDelete: coordinator.deleteItem
             )
             .frame(minHeight: 340)
@@ -129,12 +132,15 @@ struct PopupWindow: View {
         .background(
             PopupKeyMonitor(
                 onEscape: coordinator.closePopup,
-                onReturn: copySelection
+                onReturn: copySelection,
+                onDownArrow: handleDownArrow,
+                onUpArrow: handleUpArrow
             )
         )
-        .onAppear {
+        .task {
+            // Small delay to ensure the view is fully loaded before focusing
+            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
             isSearchFocused = true
-            selectedItemID = filteredItems.first?.id
         }
         .onChange(of: searchText) { _ in
             if !filteredItems.contains(where: { $0.id == selectedItemID }) {
@@ -157,6 +163,7 @@ struct PopupWindow: View {
         }
 
         coordinator.copyItem(item)
+        coordinator.closePopup()
     }
 
     private var selectedItem: ClipboardItem? {
@@ -166,14 +173,43 @@ struct PopupWindow: View {
 
         return filteredItems.first
     }
+    
+    private func handleDownArrow() {
+        if isSearchFocused && !filteredItems.isEmpty {
+            // Move focus from search to first item
+            isSearchFocused = false
+            selectedItemID = filteredItems.first?.id
+        } else if let currentID = selectedItemID,
+                  let currentIndex = filteredItems.firstIndex(where: { $0.id == currentID }),
+                  currentIndex < filteredItems.count - 1 {
+            // Move to next item
+            selectedItemID = filteredItems[currentIndex + 1].id
+        }
+    }
+    
+    private func handleUpArrow() {
+        if let currentID = selectedItemID,
+           let currentIndex = filteredItems.firstIndex(where: { $0.id == currentID }) {
+            if currentIndex == 0 {
+                // Move focus from first item back to search
+                selectedItemID = nil
+                isSearchFocused = true
+            } else {
+                // Move to previous item
+                selectedItemID = filteredItems[currentIndex - 1].id
+            }
+        }
+    }
 }
 
 private struct PopupKeyMonitor: NSViewRepresentable {
     let onEscape: () -> Void
     let onReturn: () -> Void
+    let onDownArrow: () -> Void
+    let onUpArrow: () -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onEscape: onEscape, onReturn: onReturn)
+        Coordinator(onEscape: onEscape, onReturn: onReturn, onDownArrow: onDownArrow, onUpArrow: onUpArrow)
     }
 
     func makeNSView(context: Context) -> NSView {
@@ -184,6 +220,8 @@ private struct PopupKeyMonitor: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {
         context.coordinator.onEscape = onEscape
         context.coordinator.onReturn = onReturn
+        context.coordinator.onDownArrow = onDownArrow
+        context.coordinator.onUpArrow = onUpArrow
     }
 
     static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
@@ -193,11 +231,15 @@ private struct PopupKeyMonitor: NSViewRepresentable {
     final class Coordinator {
         var onEscape: () -> Void
         var onReturn: () -> Void
+        var onDownArrow: () -> Void
+        var onUpArrow: () -> Void
         private var monitor: Any?
 
-        init(onEscape: @escaping () -> Void, onReturn: @escaping () -> Void) {
+        init(onEscape: @escaping () -> Void, onReturn: @escaping () -> Void, onDownArrow: @escaping () -> Void, onUpArrow: @escaping () -> Void) {
             self.onEscape = onEscape
             self.onReturn = onReturn
+            self.onDownArrow = onDownArrow
+            self.onUpArrow = onUpArrow
         }
 
         func install() {
@@ -211,11 +253,17 @@ private struct PopupKeyMonitor: NSViewRepresentable {
                 }
 
                 switch event.keyCode {
-                case 53:
+                case 53: // Escape
                     onEscape()
                     return nil
-                case 36:
+                case 36: // Return
                     onReturn()
+                    return nil
+                case 125: // Down arrow
+                    onDownArrow()
+                    return nil
+                case 126: // Up arrow
+                    onUpArrow()
                     return nil
                 default:
                     return event

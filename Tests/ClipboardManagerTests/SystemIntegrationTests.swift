@@ -78,6 +78,25 @@ final class MockClipboardPopupPanelController: ClipboardPopupPanelControlling {
     }
 }
 
+@MainActor
+final class MockPreferencesWindowController: PreferencesWindowControlling {
+    var showCallCount = 0
+    var closeCallCount = 0
+    var lastCoordinator: AppCoordinator?
+    var isShowing = false
+    
+    func show(coordinator: AppCoordinator) {
+        showCallCount += 1
+        isShowing = true
+        lastCoordinator = coordinator
+    }
+    
+    func close() {
+        closeCallCount += 1
+        isShowing = false
+    }
+}
+
 // HotkeyManager Tests
 @MainActor
 @Test
@@ -189,6 +208,40 @@ func popupPanelControllerMockClosesPanel() {
     controller.isShowing = true
     
     controller.close(shouldHideApp: true)
+    
+    #expect(controller.closeCallCount == 1)
+    #expect(!controller.isShowing)
+}
+
+// PreferencesWindowController Tests
+@MainActor
+@Test
+func preferencesWindowControllerMockShowsWindow() async {
+    let controller = MockPreferencesWindowController()
+    let database = ClipboardDatabase(
+        databaseURL: FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathComponent("test.db")
+    )
+    let coordinator = AppCoordinator(
+        preferencesController: controller,
+        database: database
+    )
+    
+    controller.show(coordinator: coordinator)
+    
+    #expect(controller.showCallCount == 1)
+    #expect(controller.isShowing)
+    #expect(controller.lastCoordinator === coordinator)
+}
+
+@MainActor
+@Test
+func preferencesWindowControllerMockClosesWindow() {
+    let controller = MockPreferencesWindowController()
+    controller.isShowing = true
+    
+    controller.close()
     
     #expect(controller.closeCallCount == 1)
     #expect(!controller.isShowing)

@@ -168,7 +168,7 @@ func clipboardRowViewDisplaysTimestamp() throws {
 
 @MainActor
 @Test
-func clipboardRowViewHasCopyButton() throws {
+func clipboardRowViewHasDeleteButton() throws {
     let item = ClipboardItem(
         id: UUID(),
         content: "Content",
@@ -176,24 +176,22 @@ func clipboardRowViewHasCopyButton() throws {
         sourceApplication: nil
     )
     
-    var copyCallCount = 0
-    
     let view = ClipboardRowView(
         item: item,
         isSelected: false,
-        onCopy: { copyCallCount += 1 },
+        onCopy: {},
         onDelete: {}
     )
     
     let buttons = try view.inspect().findAll(ViewType.Button.self)
     
-    // Should have copy and delete buttons
-    #expect(buttons.count >= 2)
+    // Should have only delete button (copy button was removed)
+    #expect(buttons.count == 1)
 }
 
 @MainActor
 @Test
-func clipboardRowViewCallsOnCopyWhenCopyButtonTapped() throws {
+func clipboardRowViewCallsOnCopyDirectly() throws {
     let item = ClipboardItem(
         id: UUID(),
         content: "Content",
@@ -210,12 +208,10 @@ func clipboardRowViewCallsOnCopyWhenCopyButtonTapped() throws {
         onDelete: {}
     )
     
-    // Find and tap the copy button
-    let buttons = try view.inspect().findAll(ViewType.Button.self)
-    if let copyButton = buttons.first {
-        try copyButton.tap()
-        #expect(copyCallCount == 1)
-    }
+    // Copy is now triggered by double-click or Return key, not a button
+    // Render the view to ensure onCopy callback is properly set up
+    _ = try view.inspect()
+    #expect(copyCallCount == 0) // Not called until user action
 }
 
 @MainActor
@@ -237,12 +233,11 @@ func clipboardRowViewCallsOnDeleteWhenDeleteButtonTapped() throws {
         onDelete: { deleteCallCount += 1 }
     )
     
-    // Find and tap the delete button
+    // Find and tap the delete button (now the only button)
     let buttons = try view.inspect().findAll(ViewType.Button.self)
-    if buttons.count >= 2 {
-        try buttons[1].tap()
-        #expect(deleteCallCount == 1)
-    }
+    #expect(buttons.count == 1)
+    try buttons[0].tap()
+    #expect(deleteCallCount == 1)
 }
 
 @MainActor

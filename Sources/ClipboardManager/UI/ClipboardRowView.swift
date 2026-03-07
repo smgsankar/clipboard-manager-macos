@@ -27,12 +27,6 @@ struct ClipboardRowView: View {
             }
 
             VStack(spacing: 8) {
-                Button(action: onCopy) {
-                    Image(systemName: "doc.on.doc")
-                }
-                .buttonStyle(.borderless)
-                .help("Copy to Clipboard")
-
                 Button(role: .destructive, action: onDelete) {
                     Image(systemName: "trash")
                 }

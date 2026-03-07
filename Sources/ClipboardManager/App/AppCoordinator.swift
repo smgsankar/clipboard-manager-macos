@@ -13,7 +13,7 @@ final class AppCoordinator: ObservableObject {
     private let pasteboardReader: PasteboardReading
     private let frontmostAppProvider: FrontmostAppProviding
     private let popupController: ClipboardPopupPanelControlling
-    private let preferencesController: PreferencesWindowController
+    private let preferencesController: PreferencesWindowControlling
     private let hotkeyManager: HotkeyManaging
     private let launchAtLoginManager: LaunchAtLoginControlling
     private let watcher: ClipboardWatcher
@@ -26,6 +26,7 @@ final class AppCoordinator: ObservableObject {
         pasteboardReader: PasteboardReading = PasteboardReader(),
         frontmostAppProvider: FrontmostAppProviding = FrontmostAppProvider(),
         popupController: ClipboardPopupPanelControlling = ClipboardPopupPanelController(),
+        preferencesController: PreferencesWindowControlling = PreferencesWindowController(),
         hotkeyManager: HotkeyManaging = HotkeyManager(),
         launchAtLoginManager: LaunchAtLoginControlling = LaunchAtLoginManager(),
         database: ClipboardDatabase = ClipboardDatabase()
@@ -34,7 +35,7 @@ final class AppCoordinator: ObservableObject {
         self.pasteboardReader = pasteboardReader
         self.frontmostAppProvider = frontmostAppProvider
         self.popupController = popupController
-        self.preferencesController = PreferencesWindowController()
+        self.preferencesController = preferencesController
         self.hotkeyManager = hotkeyManager
         self.launchAtLoginManager = launchAtLoginManager
         store = ClipboardStore(
