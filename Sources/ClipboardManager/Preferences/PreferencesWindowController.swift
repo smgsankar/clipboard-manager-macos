@@ -9,6 +9,7 @@ final class PreferencesWindowController {
     func show(coordinator: AppCoordinator) {
         // If window already exists, just bring it to front
         if let window = window {
+            window.center()
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return

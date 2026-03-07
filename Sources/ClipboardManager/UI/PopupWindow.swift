@@ -24,11 +24,11 @@ final class ClipboardPopupPanelController {
             panel.isFloatingPanel = true
             panel.level = .floating
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-            panel.center()
             panel.contentViewController = hostingController
             self.panel = panel
         }
 
+        panel?.center()
         NSApp.activate(ignoringOtherApps: true)
         panel?.makeKeyAndOrderFront(nil)
     }
