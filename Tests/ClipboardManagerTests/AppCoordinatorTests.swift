@@ -292,6 +292,85 @@ func appCoordinatorOpenPreferencesCanBeCalled() async {
 
 @MainActor
 @Test
+func appCoordinatorAppliesLaunchAtLoginOnStartup() async {
+    let preferences = AppPreferences(userDefaults: UserDefaults(suiteName: "test-\(UUID().uuidString)")!)
+    preferences.launchAtLoginEnabled = true
+    let launchManager = MockLaunchAtLoginController()
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(
+        preferences: preferences,
+        launchAtLoginManager: launchManager,
+        database: database
+    )
+    
+    await coordinator.startIfNeeded()
+    
+    #expect(launchManager.setEnabledCallCount == 1)
+    #expect(launchManager.lastEnabledValue == true)
+}
+
+@MainActor
+@Test
+func appCoordinatorUpdatesLaunchAtLoginWhenPreferenceChanges() async {
+    let preferences = AppPreferences(userDefaults: UserDefaults(suiteName: "test-\(UUID().uuidString)")!)
+    let launchManager = MockLaunchAtLoginController()
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(
+        preferences: preferences,
+        launchAtLoginManager: launchManager,
+        database: database
+    )
+    
+    await coordinator.startIfNeeded()
+    
+    let initialCount = launchManager.setEnabledCallCount
+    
+    preferences.launchAtLoginEnabled = false
+    
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    
+    #expect(launchManager.setEnabledCallCount > initialCount)
+    #expect(launchManager.lastEnabledValue == false)
+}
+
+@MainActor
+@Test
+func appCoordinatorSetErrorMessageWhenLaunchAtLoginFails() async {
+    let preferences = AppPreferences(userDefaults: UserDefaults(suiteName: "test-\(UUID().uuidString)")!)
+    let launchManager = MockLaunchAtLoginController()
+    launchManager.mockLastErrorMessage = "Failed to register"
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let database = ClipboardDatabase(databaseURL: tempDir.appendingPathComponent("test.db"))
+    
+    defer {
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+    
+    let coordinator = AppCoordinator(
+        preferences: preferences,
+        launchAtLoginManager: launchManager,
+        database: database
+    )
+    
+    await coordinator.startIfNeeded()
+    
+    #expect(coordinator.launchAtLoginErrorMessage == "Failed to register")
+}
+
+@MainActor
+@Test
 func appCoordinatorClosesPopupWhenOpeningPreferences() async {
     let popupController = MockClipboardPopupPanelController()
     let preferencesController = MockPreferencesWindowController()

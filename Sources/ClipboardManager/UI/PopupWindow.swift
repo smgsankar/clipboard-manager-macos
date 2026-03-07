@@ -94,6 +94,7 @@ struct PopupWindow: View {
                 }
             }
             .padding(.horizontal, 16)
+            .frame(height: 60)
 
             Divider()
 
@@ -106,7 +107,7 @@ struct PopupWindow: View {
                 },
                 onDelete: coordinator.deleteItem
             )
-            .frame(minHeight: 340)
+            .frame(minHeight: 360)
 
             Divider()
 
@@ -127,8 +128,9 @@ struct PopupWindow: View {
                 .disabled(store.items.isEmpty)
             }
             .padding(.horizontal, 16)
+            .frame(height: 60)
         }
-        .frame(minWidth: 640, idealWidth: 720, minHeight: 420, idealHeight: 520)
+        .frame(minWidth: 640, idealWidth: 720, minHeight: 480, idealHeight: 480)
         .background(
             PopupKeyMonitor(
                 onEscape: coordinator.closePopup,

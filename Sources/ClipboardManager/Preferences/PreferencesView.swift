@@ -73,6 +73,6 @@ struct PreferencesView: View {
         }
         .formStyle(.grouped)
         .padding(20)
-        .frame(minWidth: 460, minHeight: 320)
+        .frame(minWidth: 460, minHeight: 520)
     }
 }
