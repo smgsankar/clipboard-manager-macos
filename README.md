@@ -235,14 +235,15 @@ Future enhancements under consideration:
 - [ ] Image clipboard support
 - [ ] File clipboard support
 - [ ] Rich text formatting preservation
-- [ ] Clipboard snippets/favorites
+- [ ] Clipboard snippets/favorites - pin important items
+- [ ] Automatic paste on selection (optional, user-configurable)
 - [ ] SQLite database encryption
 - [ ] Export/import clipboard history
 - [ ] Sync across devices (optional, privacy-respecting)
 
 ## License
 
-[Add your chosen license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
