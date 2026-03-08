@@ -39,6 +39,41 @@ swift build -c release
 .build/release/ClipboardManager
 ```
 
+### Using Pre-built Releases
+
+Pre-built app bundles are available from GitHub Actions workflow runs.
+
+**⚠️ macOS Security Warning**
+
+Since the app is not notarized with Apple, macOS Gatekeeper will show a security warning when you first open it. This is normal for open-source apps without paid Apple Developer accounts.
+
+**To open the app:**
+
+**Step 1: Remove the quarantine attribute**
+
+Open Terminal and run:
+```bash
+xattr -cr ~/Downloads/ClipboardManager.app
+```
+(Adjust the path if you extracted it elsewhere)
+
+**Step 2: Open the app**
+
+Now you can open it normally:
+- Double-click `ClipboardManager.app` in Finder, or
+- Run: `open ~/Downloads/ClipboardManager.app`
+
+**Alternative: Right-click method**
+
+If the command line method doesn't work, try:
+1. **Right-click** (or Control+click) on `ClipboardManager.app`
+2. Select **"Open"** from the context menu
+3. Click **"Open"** in the security dialog (if this button appears)
+
+> **Why is this necessary?** macOS marks downloaded apps with a "quarantine" flag and requires notarization (which requires a $99/year Apple Developer account). This is an open-source project without commercial backing.
+> 
+> **Is it safe?** The source code is fully open and available for inspection. Building from source is always an option if you prefer complete control over what you're running.
+
 ## Usage
 
 ### Basic Operations
