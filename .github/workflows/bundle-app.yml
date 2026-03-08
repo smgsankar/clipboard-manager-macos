@@ -34,5 +34,5 @@ jobs:
         with:
           name: ClipboardManager-App
           path: ${{ env.ZIP_FILE }}
-          retention-days: 2
+          retention-days: 30
           if-no-files-found: error
