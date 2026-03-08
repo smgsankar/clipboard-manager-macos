@@ -1,0 +1,46 @@
+name: Bundle App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bundle:
+    name: Build and Bundle
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+      
+      - name: Run bundle script
+        run: |
+          chmod +x ./scripts/bundle.sh
+          chmod +x ./scripts/generate_icns.sh
+          ./scripts/bundle.sh
+      
+      - name: Create zip archive
+        run: |
+          ZIP_NAME="ClipboardManager-${{ github.sha }}.zip"
+          ditto -c -k --keepParent ClipboardManager.app "$ZIP_NAME"
+          echo "ZIP_FILE=$ZIP_NAME" >> $GITHUB_ENV
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClipboardManager-App
+          path: ${{ env.ZIP_FILE }}
+          retention-days: 30
+          if-no-files-found: error
+      
+      - name: Upload app bundle (unzipped)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClipboardManager-App-Bundle
+          path: ClipboardManager.app/
+          retention-days: 30
+          if-no-files-found: error
