@@ -78,6 +78,7 @@ struct PopupWindow: View {
 
     @State private var searchText = ""
     @State private var selectedItemID: ClipboardItem.ID?
+    @State private var shouldScrollToSelection = false
     @State private var isShowingClearConfirmation = false
     @FocusState private var isSearchFocused: Bool
 
@@ -106,6 +107,7 @@ struct PopupWindow: View {
             ClipboardListView(
                 items: filteredItems,
                 selectedItemID: $selectedItemID,
+                shouldScrollToSelection: $shouldScrollToSelection,
                 onCopy: { item in
                     coordinator.copyItem(item)
                     coordinator.closePopup()
@@ -185,11 +187,13 @@ struct PopupWindow: View {
         if isSearchFocused && !filteredItems.isEmpty {
             // Move focus from search to first item
             isSearchFocused = false
+            shouldScrollToSelection = true
             selectedItemID = filteredItems.first?.id
         } else if let currentID = selectedItemID,
                   let currentIndex = filteredItems.firstIndex(where: { $0.id == currentID }),
                   currentIndex < filteredItems.count - 1 {
             // Move to next item
+            shouldScrollToSelection = true
             selectedItemID = filteredItems[currentIndex + 1].id
         }
     }
@@ -203,6 +207,7 @@ struct PopupWindow: View {
                 isSearchFocused = true
             } else {
                 // Move to previous item
+                shouldScrollToSelection = true
                 selectedItemID = filteredItems[currentIndex - 1].id
             }
         }
