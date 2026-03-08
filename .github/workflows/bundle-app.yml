@@ -27,7 +27,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ClipboardManager-App
+          name: ClipboardManager-${{ github.sha }}
           path: ${{ env.ZIP_FILE }}
           retention-days: 30
           if-no-files-found: error
