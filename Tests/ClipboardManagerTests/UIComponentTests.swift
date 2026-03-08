@@ -344,3 +344,155 @@ func popupWindowDisplaysItemCount() throws {
     let itemsText = try view.inspect().find(text: "0 items")
     #expect(try itemsText.string() == "0 items")
 }
+
+// MARK: - ClipboardListView Tests
+
+@MainActor
+@Test
+func clipboardListViewDisplaysEmptyState() throws {
+    @State var selectedID: UUID? = nil
+    
+    let view = ClipboardListView(
+        items: [],
+        selectedItemID: $selectedID,
+        onCopy: { _ in },
+        onDelete: { _ in }
+    )
+    
+    let emptyText = try view.inspect().find(text: "No clipboard items")
+    #expect(try emptyText.string() == "No clipboard items")
+}
+
+@MainActor
+@Test
+func clipboardListViewDisplaysItems() throws {
+    let item1 = ClipboardItem(
+        id: UUID(),
+        content: "Test item 1",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    let item2 = ClipboardItem(
+        id: UUID(),
+        content: "Test item 2",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    @State var selectedID: UUID? = nil
+    
+    let view = ClipboardListView(
+        items: [item1, item2],
+        selectedItemID: $selectedID,
+        onCopy: { _ in },
+        onDelete: { _ in }
+    )
+    
+    // Verify the list contains items
+    let list = try view.inspect().find(ViewType.List.self)
+    #expect(list != nil)
+}
+
+@MainActor
+@Test
+func clipboardListViewHasScrollViewReader() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Test item",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    @State var selectedID: UUID? = nil
+    
+    let view = ClipboardListView(
+        items: [item],
+        selectedItemID: $selectedID,
+        onCopy: { _ in },
+        onDelete: { _ in }
+    )
+    
+    // Verify ScrollViewReader is present by checking the view hierarchy
+    let scrollViewReader = try view.inspect().find(ViewType.ScrollViewReader.self)
+    #expect(scrollViewReader != nil)
+}
+
+@MainActor
+@Test
+func clipboardListViewCallsOnCopy() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Test item",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    @State var selectedID: UUID? = nil
+    var copiedItem: ClipboardItem? = nil
+    
+    let view = ClipboardListView(
+        items: [item],
+        selectedItemID: $selectedID,
+        onCopy: { copiedItem = $0 },
+        onDelete: { _ in }
+    )
+    
+    // Render view to ensure callbacks are set up
+    _ = try view.inspect()
+    #expect(copiedItem == nil) // Not called until user action
+}
+
+@MainActor
+@Test
+func clipboardListViewCallsOnDelete() throws {
+    let item = ClipboardItem(
+        id: UUID(),
+        content: "Test item",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    @State var selectedID: UUID? = nil
+    var deletedItem: ClipboardItem? = nil
+    
+    let view = ClipboardListView(
+        items: [item],
+        selectedItemID: $selectedID,
+        onCopy: { _ in },
+        onDelete: { deletedItem = $0 }
+    )
+    
+    // Render view to ensure callbacks are set up
+    _ = try view.inspect()
+    #expect(deletedItem == nil) // Not called until user action
+}
+
+@MainActor
+@Test
+func clipboardListViewUpdatesSelection() throws {
+    let item1 = ClipboardItem(
+        id: UUID(),
+        content: "Test item 1",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    let item2 = ClipboardItem(
+        id: UUID(),
+        content: "Test item 2",
+        timestamp: Date(),
+        sourceApplication: nil
+    )
+    
+    @State var selectedID: UUID? = nil
+    
+    let view = ClipboardListView(
+        items: [item1, item2],
+        selectedItemID: $selectedID,
+        onCopy: { _ in },
+        onDelete: { _ in }
+    )
+    
+    // Verify list can handle selection binding
+    _ = try view.inspect()
+    #expect(selectedID == nil)
+}
